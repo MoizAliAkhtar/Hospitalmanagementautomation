@@ -2,10 +2,16 @@ pipeline {
     agent any
 
     options {
-        timeout(time: 30, unit: 'MINUTES')
+        timeout(time: 45, unit: 'MINUTES')
     }
 
     stages {
+        stage('Clean Workspace') {
+            steps {
+                deleteDir()
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 checkout([
@@ -15,10 +21,12 @@ pipeline {
                         url: 'https://github.com/MoizAliAkhtar/Hospitalmanagementautomation.git'
                     ]],
                     extensions: [
+                        [$class: 'WipeWorkspace'],
                         [$class: 'CloneOption',
                          shallow: true,
                          depth: 1,
-                         timeout: 30]
+                         noTags: true,
+                         timeout: 45]
                     ]
                 ])
             }
