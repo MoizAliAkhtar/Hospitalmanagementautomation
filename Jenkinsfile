@@ -1,11 +1,17 @@
 pipeline {
-    agent any
+    agent { label 'ec2-agent' }
+
+    environment {
+        DOCKER_IMAGE = "moiz314/hospital-management"
+        DOCKER_TAG   = "latest"
+    }
 
     options {
         timeout(time: 45, unit: 'MINUTES')
     }
 
     stages {
+
         stage('Clean Workspace') {
             steps {
                 deleteDir()
@@ -14,27 +20,32 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/MoizAliAkhtar/Hospitalmanagementautomation.git'
-                    ]],
-                    extensions: [
-                        [$class: 'WipeWorkspace'],
-                        [$class: 'CloneOption',
-                         shallow: true,
-                         depth: 1,
-                         noTags: true,
-                         timeout: 45]
-                    ]
-                ])
+                git branch: 'main',
+                    url: 'https://github.com/MoizAliAkhtar/Hospitalmanagementautomation.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                bat 'docker build -t hospital-management:latest .'
+                sh 'docker build -t $DOCKER_IMAGE:$DOCKER_TAG .'
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Image to Docker Hub') {
+            steps {
+                sh 'docker push $DOCKER_IMAGE:$DOCKER_TAG'
             }
         }
     }
