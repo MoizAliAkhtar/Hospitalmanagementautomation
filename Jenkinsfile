@@ -54,8 +54,15 @@ pipeline {
                     sh '''
             ssh -o StrictHostKeyChecking=no ubuntu@13.60.24.69 "
                 docker pull $DOCKER_IMAGE:$DOCKER_TAG
-                docker stop hospital || true
-                docker rm hospital || true
+
+                # Stop and remove old container if exists
+                docker ps -q --filter name=hospital | grep -q . && docker stop hospital
+                docker ps -a -q --filter name=hospital | grep -q . && docker rm hospital
+
+                # Kill any process using port 8000
+                sudo fuser -k 8000/tcp || true
+
+                # Run the new container
                 docker run -d --name hospital -p 8000:8000 $DOCKER_IMAGE:$DOCKER_TAG
             "
             '''
