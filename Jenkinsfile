@@ -60,7 +60,7 @@ pipeline {
                 docker ps -a -q --filter name=hospital | grep -q . && docker rm hospital || true
 
                 # Kill any process using port 8000 (with sudo, no password)
-                sudo lsof -t -i:8000 | xargs -r sudo kill -9
+               sudo fuser -k 8000/tcp || true
 
                 # Run the new container
                 docker run -d --name hospital -p 8000:8000 $DOCKER_IMAGE:$DOCKER_TAG
