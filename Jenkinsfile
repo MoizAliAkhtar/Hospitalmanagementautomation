@@ -2,8 +2,8 @@ pipeline {
     agent { label 'ec2-agent' }
 
     environment {
-        DOCKER_IMAGE = "moiz314/hospital-management"
-        DOCKER_TAG   = "latest"
+        DOCKER_IMAGE = 'moiz314/hospital-management'
+        DOCKER_TAG   = 'latest'
     }
 
     options {
@@ -11,7 +11,6 @@ pipeline {
     }
 
     stages {
-
         stage('Clean Workspace') {
             steps {
                 deleteDir()
@@ -51,14 +50,16 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh '''
-                ssh -o StrictHostKeyChecking=no ec2-user@13.60.24.69 "
-                    docker pull $DOCKER_IMAGE:$DOCKER_TAG
-                    docker stop hospital || true
-                    docker rm hospital || true
-                    docker run -d --name hospital -p 8000:8000 $DOCKER_IMAGE:$DOCKER_TAG
-                "
-                '''
+                sshagent(['ec2-ssh-key']) {
+                    sh '''
+            ssh -o StrictHostKeyChecking=no ubuntu@13.60.24.69 "
+                docker pull $DOCKER_IMAGE:$DOCKER_TAG
+                docker stop hospital || true
+                docker rm hospital || true
+                docker run -d --name hospital -p 8000:8000 $DOCKER_IMAGE:$DOCKER_TAG
+            "
+            '''
+                }
             }
         }
     }
