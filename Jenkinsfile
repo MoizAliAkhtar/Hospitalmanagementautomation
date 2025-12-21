@@ -48,5 +48,18 @@ pipeline {
                 sh 'docker push $DOCKER_IMAGE:$DOCKER_TAG'
             }
         }
+
+        stage('Deploy') {
+            steps {
+                sh '''
+                ssh -o StrictHostKeyChecking=no ec2-user@13.60.24.69 "
+                    docker pull $DOCKER_IMAGE:$DOCKER_TAG
+                    docker stop hospital || true
+                    docker rm hospital || true
+                    docker run -d --name hospital -p 8000:8000 $DOCKER_IMAGE:$DOCKER_TAG
+                "
+                '''
+            }
+        }
     }
 }
