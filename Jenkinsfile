@@ -50,21 +50,30 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sshagent(['ec2-ssh-key']) {
+                sshagent(['ubuntu']) {
                     sh '''
-            ssh -o StrictHostKeyChecking=no ubuntu@13.60.24.69 "
-                docker pull $DOCKER_IMAGE:$DOCKER_TAG
+                ssh -o StrictHostKeyChecking=no ubuntu@13.60.24.69 bash -c "
+                    echo 'Pulling latest image...'
+                    docker pull moiz314/hospital-management:latest
 
-                # Stop old container
-                docker ps -q --filter name=hospital | grep -q . && docker stop hospital || true
-                docker ps -a -q --filter name=hospital | grep -q . && docker rm hospital || true
+                    echo 'Stopping old container if exists...'
+                    if [ \$(docker ps -q --filter name=hospital) ]; then
+                        docker stop hospital
+                        docker rm hospital
+                    fi
 
-                # Kill any process using port 8000 (with sudo, no password)
-               sudo fuser -k 8000/tcp || true
+                    echo 'Killing any process using port 8000...'
+                    sudo fuser -k 8000/tcp || true
 
-                # Run the new container
-                docker run -d --name hospital -p 8000:8000 $DOCKER_IMAGE:$DOCKER_TAG
-            "
+                    echo 'Waiting for port 8000 to be free...'
+                    while sudo lsof -i:8000 >/dev/null 2>&1; do
+                        echo 'Port 8000 still in use. Waiting...'
+                        sleep 2
+                    done
+
+                    echo 'Running new container...'
+                    docker run -d --name hospital -p 8000:8000 moiz314/hospital-management:latest
+                "
             '''
                 }
             }
