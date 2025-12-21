@@ -50,7 +50,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sshagent(['ubuntu']) {
+                sshagent(['ec2-ssh-key']) {
                     sh '''
                 ssh -o StrictHostKeyChecking=no ubuntu@13.60.24.69 bash -c "
                     echo 'Pulling latest image...'
